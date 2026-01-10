@@ -75,7 +75,12 @@ export class AuthService {
         return {
             message: 'Teacher registration submitted',
             status: user.status,
-    
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+            }
         };
     }
 
@@ -97,6 +102,7 @@ export class AuthService {
 
         const payload = {
             id: user.id,
+            name: user.name,
             email: user.email,
             role: user.role,
         };
@@ -105,7 +111,13 @@ export class AuthService {
 
         return {
             message: 'Login success',
-            access_token: accessToken,
+            accessToken: accessToken,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            },
         };
     };
 }
