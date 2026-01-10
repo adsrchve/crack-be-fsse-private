@@ -1,0 +1,109 @@
+import { PrismaService } from 'src/prisma/prisma.service';
+import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { RegisterStudentDto, LoginDto, RegisterTeacherDto } from './dto/auth.dto';
+import { Role, UserStatus } from '@prisma/client';
+import { JwtService } from '@nestjs/jwt';
+import { randomUUID } from 'crypto';
+
+@Injectable()
+export class AuthService {
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly jwtService: JwtService,
+    ) {}
+
+    // STUDENT REGISTRATION
+    async registerStudent(dto: RegisterStudentDto) {
+        const existing = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
+
+        if (existing) throw new ConflictException('Email already registered');
+
+        const user = await this.prisma.user.create({
+            data: {
+                email: dto.email,
+                password: dto.password,
+                name: dto.name,
+                role: Role.STUDENT,
+                status: UserStatus.ACTIVE,
+            },
+        });
+
+        return {
+            message: 'Student registered successfully',
+            status: user.status,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+            },
+        };
+    }
+
+    // TEACHER REGISTRATION
+    async registerTeacher(dto: RegisterTeacherDto) {
+        console.log('🔥 REGISTER TEACHER HIT');
+
+        const token = randomUUID();
+        const approvalLink = `http://localhost:3000/admin/teachers/approve?token=${token}`;
+
+        console.log('Approval Link:', approvalLink);
+
+        const existing = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
+
+        if (existing) throw new ConflictException('Email already registered');
+
+
+        const user = await this.prisma.user.create({
+            data: {
+                email: dto.email,
+                password: dto.password,
+                name: dto.name,
+                role: Role.TEACHER,
+                status: UserStatus.PENDING,
+                approvalToken: token,
+            },
+        });
+
+
+        return {
+            message: 'Teacher registration submitted',
+            status: user.status,
+    
+        };
+    }
+
+    // LOGIN
+    async login(dto: LoginDto) {
+        const user = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
+
+        if (!user) throw new UnauthorizedException('Invalid credentials');
+
+        if (user.password !== dto.password) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+
+        if (user.status !== UserStatus.ACTIVE) {
+            throw new ForbiddenException('Account not approved yet');
+        }
+
+        const payload = {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+        };
+
+        const accessToken = await this.jwtService.signAsync(payload);
+
+        return {
+            message: 'Login success',
+            access_token: accessToken,
+        };
+    };
+}
