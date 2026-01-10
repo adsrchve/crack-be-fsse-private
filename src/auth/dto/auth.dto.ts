@@ -1,8 +1,3 @@
-// export enum RegisterAs {
-//     STUDENT = 'STUDENT',
-//     TEACHER = 'TEACHER',
-// }
-
 export class RegisterStudentDto {
     email: string;
     password: string;

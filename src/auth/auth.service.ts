@@ -4,6 +4,7 @@ import { RegisterStudentDto, LoginDto, RegisterTeacherDto } from './dto/auth.dto
 import { Role, UserStatus } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
@@ -12,7 +13,7 @@ export class AuthService {
         private readonly jwtService: JwtService,
     ) {}
 
-    // STUDENT REGISTRATION
+// STUDENT REGISTRATION
     async registerStudent(dto: RegisterStudentDto) {
         const existing = await this.prisma.user.findUnique({
             where: { email: dto.email },
@@ -20,10 +21,11 @@ export class AuthService {
 
         if (existing) throw new ConflictException('Email already registered');
 
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
         const user = await this.prisma.user.create({
             data: {
                 email: dto.email,
-                password: dto.password,
+                password: hashedPassword,
                 name: dto.name,
                 role: Role.STUDENT,
                 status: UserStatus.ACTIVE,
@@ -42,7 +44,8 @@ export class AuthService {
         };
     }
 
-    // TEACHER REGISTRATION
+
+// TEACHER REGISTRATION
     async registerTeacher(dto: RegisterTeacherDto) {
         console.log('🔥 REGISTER TEACHER HIT');
 
@@ -57,18 +60,17 @@ export class AuthService {
 
         if (existing) throw new ConflictException('Email already registered');
 
-
+        const hashedPassword = await bcrypt.hash(dto.password, 10);
         const user = await this.prisma.user.create({
             data: {
                 email: dto.email,
-                password: dto.password,
+                password: hashedPassword,
                 name: dto.name,
                 role: Role.TEACHER,
                 status: UserStatus.PENDING,
                 approvalToken: token,
             },
         });
-
 
         return {
             message: 'Teacher registration submitted',
@@ -77,21 +79,21 @@ export class AuthService {
         };
     }
 
-    // LOGIN
+
+// LOGIN
     async login(dto: LoginDto) {
         const user = await this.prisma.user.findUnique({
             where: { email: dto.email },
         });
 
         if (!user) throw new UnauthorizedException('Invalid credentials');
-
-        if (user.password !== dto.password) {
-            throw new UnauthorizedException('Invalid credentials');
-        }
-
         if (user.status !== UserStatus.ACTIVE) {
             throw new ForbiddenException('Account not approved yet');
         }
+        
+        const isMatch = await bcrypt.compare(dto.password, user.password);
+
+        if (!isMatch) throw new UnauthorizedException('Invalid credentials');
 
         const payload = {
             id: user.id,
