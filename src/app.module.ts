@@ -8,9 +8,10 @@ import { CourseModule } from './course/course.module';
 import { EnrollmentModule } from './enrollment/enrollment.module';
 import { LessonModule } from './lesson/lesson.module';
 import { AssignmentModule } from './assignment/assignment.module';
+import { QuizModule } from './quiz/quiz.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, AdminModule, CourseModule, EnrollmentModule, LessonModule, AssignmentModule],
+  imports: [AuthModule, PrismaModule, AdminModule, CourseModule, EnrollmentModule, LessonModule, AssignmentModule, QuizModule],
   controllers: [AppController],
   providers: [AppService],
 })
