@@ -8,7 +8,7 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// USER
+// USERS
 model User {
   id            String        @id @default(uuid())
   email         String        @unique
@@ -45,6 +45,7 @@ model Course {
   teacherId     String
   teacher       User            @relation("TeacherCourses", fields: [teacherId], references: [id])
   enrollments   Enrollment[]
+  lessons       Lesson[]
 
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -56,8 +57,21 @@ model Enrollment {
   courseId      String
   user          User            @relation(fields: [userId], references: [id])
   course        Course          @relation(fields: [courseId], references: [id])
+  
   createdAt     DateTime        @default(now())
 
   @@unique([userId, courseId])
 }
 
+
+// LESSONS
+model Lesson {
+  id          String      @id @default(uuid())
+  title       String
+  content     String
+  courseId    String
+  course      Course    @relation(fields: [courseId], references: [id])
+  order       Int
+  
+  createdAt   DateTime  @default(now())
+}
