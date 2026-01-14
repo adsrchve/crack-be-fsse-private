@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { CreateAssignmentDto } from './dto/create-assignment.dto';
+import { CreateAssignmentDto } from './dto/assignment.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
