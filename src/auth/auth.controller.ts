@@ -1,8 +1,9 @@
 import { AuthService } from './auth.service';
-import { Controller, Get, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, NotFoundException, Query } from '@nestjs/common';
 import { Body, Post } from '@nestjs/common';
 import { RegisterStudentDto, LoginDto, RegisterTeacherDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
+import { get } from 'http';
 
 @Controller('auth')
 export class AuthController {
@@ -17,6 +18,11 @@ export class AuthController {
     @Post('register/teacher')
     registerTeacher(@Body() dto: RegisterTeacherDto) {
         return this.authService.registerTeacher(dto);
+    }
+
+    @Get('approve')
+    async approveTeacher(@Query('token') token: string) {
+        return this.authService.approveTeacher(token);
     }
 
     // User login

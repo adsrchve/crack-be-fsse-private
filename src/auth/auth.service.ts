@@ -1,5 +1,5 @@
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { RegisterStudentDto, LoginDto, RegisterTeacherDto } from './dto/auth.dto';
 import { Role, UserStatus } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
@@ -50,7 +50,7 @@ export class AuthService {
         console.log('🔥 REGISTER TEACHER HIT');
 
         const token = randomUUID();
-        const approvalLink = `http://localhost:3000/admin/teachers/approve?token=${token}`;
+        const approvalLink = `${process.env.FRONTEND_URL}/approve?token=${token}`;
 
         console.log('Approval Link:', approvalLink);
 
@@ -74,14 +74,26 @@ export class AuthService {
 
         return {
             message: 'Teacher registration submitted',
-            status: user.status,
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role,
-            }
+            approvalLink,
         };
+    }
+
+    async approveTeacher(token: string) {
+        const user = await this.prisma.user.findFirst({
+            where: { approvalToken: token },
+        });
+
+        if (!user) throw new NotFoundException('Invalid approval token');
+
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                status: UserStatus.ACTIVE,
+                approvalToken: null,
+            },
+        });
+        
+        return { message: 'Account activated' };
     }
 
 
