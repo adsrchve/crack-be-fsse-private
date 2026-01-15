@@ -8,20 +8,108 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// USERS
 model User {
-  id            String        @id @default(uuid())
-  email         String        @unique
+  id            String       @id @default(uuid())
+  email         String       @unique
   password      String
   name          String
-  role          Role          
-  status        UserStatus    @default(ACTIVE)
-  approvalToken String?       @unique
-  courses       Course[]      @relation("TeacherCourses")
+  role          Role
+  createdAt     DateTime     @default(now())
+  status        UserStatus   @default(ACTIVE)
+  approvalToken String?      @unique
+  courses       Course[]     @relation("TeacherCourses")
+  discussions   Discussion[]
   enrollments   Enrollment[]
-  discussions   Discussion[]  
+}
 
-  createdAt     DateTime      @default(now())
+model Course {
+  id          String       @id @default(uuid())
+  title       String
+  description String
+  thumbnail   String?
+  teacherId   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  assignments Assignment[]
+  teacher     User         @relation("TeacherCourses", fields: [teacherId], references: [id])
+  discussions Discussion[]
+  enrollments Enrollment[]
+  lessons     Lesson[]
+  quizzes     Quiz[]
+}
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  userId    String
+  courseId  String
+  createdAt DateTime @default(now())
+  course    Course   @relation(fields: [courseId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, courseId])
+}
+
+model Lesson {
+  id        String   @id @default(uuid())
+  title     String
+  content   String
+  courseId  String
+  order     Int
+  createdAt DateTime @default(now())
+  course    Course   @relation(fields: [courseId], references: [id])
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  courseId    String
+  dueDate     DateTime
+  createdAt   DateTime @default(now())
+  course      Course   @relation(fields: [courseId], references: [id])
+}
+
+model Quiz {
+  id        String         @id @default(uuid())
+  title     String
+  courseId  String
+  createdAt DateTime       @default(now())
+  course    Course         @relation(fields: [courseId], references: [id])
+  questions QuizQuestion[]
+}
+
+model QuizQuestion {
+  id       String       @id @default(uuid())
+  question String
+  quizId   String
+  options  QuizOption[]
+  quiz     Quiz         @relation(fields: [quizId], references: [id])
+}
+
+model QuizOption {
+  id         String       @id @default(uuid())
+  text       String
+  isCorrect  Boolean      @default(false)
+  questionId String
+  question   QuizQuestion @relation(fields: [questionId], references: [id])
+}
+
+model QuizSubmission {
+  id        String   @id @default(uuid())
+  userId    String
+  quizId    String
+  score     Int
+  createdAt DateTime @default(now())
+}
+
+model Discussion {
+  id        String   @id @default(uuid())
+  content   String
+  userId    String
+  courseId  String
+  createdAt DateTime @default(now())
+  course    Course   @relation(fields: [courseId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 enum Role {
@@ -34,110 +122,4 @@ enum UserStatus {
   ACTIVE
   PENDING
   REJECTED
-}
-
-
-// COURSES
-model Course {
-  id            String          @id @default(uuid())
-  title         String
-  description   String
-  thumbnail     String?
-  teacherId     String
-  teacher       User            @relation("TeacherCourses", fields: [teacherId], references: [id])
-  enrollments   Enrollment[]
-  lessons       Lesson[]
-  assignments   Assignment[]
-  quizzes       Quiz[]
-  discussions   Discussion[]
-
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-}
-
-model Enrollment {
-  id            String          @id @default(uuid())
-  userId        String
-  courseId      String
-  user          User            @relation(fields: [userId], references: [id])
-  course        Course          @relation(fields: [courseId], references: [id])
-  
-  createdAt     DateTime        @default(now())
-
-  @@unique([userId, courseId])
-}
-
-
-// LESSONS
-model Lesson {
-  id          String      @id @default(uuid())
-  title       String
-  content     String
-  courseId    String
-  course      Course      @relation(fields: [courseId], references: [id])
-  order       Int
-  
-  createdAt   DateTime    @default(now())
-}
-
-
-// ASSIGNMENTS
-model Assignment {
-  id            String      @id @default(uuid())
-  title         String 
-  description   String 
-  courseId      String
-  course        Course      @relation(fields: [courseId], references: [id])
-  dueDate       DateTime
-  createdAt     DateTime    @default(now())
-}
-
-
-// QUIZZES
-model Quiz {
-  id            String            @id @default(uuid())
-  title         String 
-  courseId      String
-  course        Course            @relation(fields: [courseId], references: [id])
-  questions     QuizQuestion[]
-
-  createdAt     DateTime          @default(now())
-}
-
-model QuizQuestion {
-  id            String          @id @default(uuid())
-  question      String
-  quizId        String
-  quiz          Quiz            @relation(fields: [quizId], references: [id])
-  options       QuizOption[]
-}
-
-model QuizOption {
-  id            String          @id @default(uuid())
-  text          String
-  isCorrect     Boolean         @default(false)
-  questionId    String
-  question      QuizQuestion    @relation(fields: [questionId], references: [id])
-}
-
-model QuizSubmission {
-  id            String        @id @default(uuid())
-  userId        String
-  quizId        String
-  score         Int
-
-  createdAt     DateTime      @default(now())
-}
-
-
-// FORUM DISCUSSIONS
-model Discussion {
-  id            String        @id @default(uuid())
-  content       String 
-  userId        String
-  courseId      String
-  user          User          @relation(fields: [userId], references: [id])
-  course        Course        @relation(fields: [courseId], references: [id])
-
-  createdAt     DateTime      @default(now())
 }

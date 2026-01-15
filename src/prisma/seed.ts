@@ -5,38 +5,110 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
+// ======= SEED ADMIN =======
     console.log("Running admin seed...");
     console.log("ADMIN_EMAIL", process.env.ADMIN_EMAIL);
+    console.log("SEED DATABASE_URL =", process.env.DATABASE_URL);
+    console.log("SEED DIRECT_URL =", process.env.DIRECT_URL);
+
 
     const adminEmail = process.env.ADMIN_EMAIL;
     const adminPassword = process.env.ADMIN_PASSWORD;
 
-    if (!adminEmail || !adminPassword) throw new Error("ADMIN_EMAIL / ADMIN_PASSWORD is not defined");
+    if (!adminEmail || !adminPassword)
+        throw new Error("ADMIN_EMAIL / ADMIN_PASSWORD is not defined");
 
-    const existing = await prisma.user.findUnique({
+    const existingAdmin = await prisma.user.findUnique({
         where: { email: adminEmail },
     });
 
-    if (existing) {
-        console.log("Admin already exists");
-        return;
+    if (!existingAdmin) {
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
+        await prisma.user.create({
+            data: {
+                email: adminEmail,
+                password: hashedPassword,
+                name: process.env.ADMIN_NAME || 'Super Admin',
+                role: Role.ADMIN,
+                status: UserStatus.ACTIVE,
+            },  
+        });
+        console.log("Admin created successfully");
+    } else {
+        console.log('Admin already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-    await prisma.user.create({
-        data: {
-            email: adminEmail,
-            password: hashedPassword,
-            name: process.env.ADMIN_NAME || 'Super Admin',
-            role: Role.ADMIN,
-            status: UserStatus.ACTIVE,
-        },
-    });
+// ======= SEED COURSES =======
+    const courseCount = await prisma.course.count();
 
-    console.log("Admin created successfully");
+    if (courseCount === 0) {
+        const teacher = await prisma.user.findFirst({
+            where: { role: Role.TEACHER },
+        });
+
+        if (!teacher) {
+            console.log('No teacher found. Please register & approve a teacher first.');
+            return;
+        }
+
+        await prisma.course.createMany({
+            data: [
+                {
+                    title: 'Basic Programming',
+                    description: 'Learn the fundamentals of programming.',
+                    teacherId: teacher.id,
+                },
+                {
+                    title: 'Web Development',
+                    description: 'HTML, CSS, React, and Next.js.',
+                    teacherId: teacher.id,
+                },
+                {
+                    title: 'Database Systems',
+                    description: 'Learn SQL and relational databases.',
+                    teacherId: teacher.id,
+                },
+            ],
+        });
+
+        console.log('Courses seeded successfully');
+    } else {
+        console.log('Courses already exist');
+    }
+
+
+// ======= SEED COURSES =======
+    const course = await prisma.course.findFirst();
+    if (course) {
+        const lessonCount = await prisma.lesson.count();
+        if (lessonCount === 0) {
+            await prisma.lesson.createMany({
+                data: [
+                    { 
+                        title: "Intro to Programming",
+                        content: "Welcome...",
+                        courseId: course.id,
+                        order: 1,
+                    },
+                    { 
+                        title: "Variables", 
+                        content: "Let's learn variables.", 
+                        courseId: course.id,
+                        order: 2,
+                    },
+                ],
+            });
+            console.log("Lessons seeded");
+        } else {
+            console.log('Lessons already exist');
+        }   
+
+    }
 }
+
 
 main()
     .catch(console.error)
-    .finally(() => prisma.$disconnect());
+    .finally(() => prisma.$disconnect())

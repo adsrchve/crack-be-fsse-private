@@ -3,7 +3,7 @@ import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
 
-@Controller('course')
+@Controller('courses')
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}
 
@@ -15,7 +15,7 @@ export class CourseController {
   }
 
   @Get()
-  findAll() {
+  findAllCourses() {
     return this.courseService.findAll();
   }
 
