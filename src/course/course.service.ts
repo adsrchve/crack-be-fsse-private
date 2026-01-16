@@ -22,6 +22,13 @@ export class CourseService {
     });
   }
 
+  findOne(id: string) {
+    return this.prisma.course.findUnique({
+      where: { id },
+      include: { teacher: true },
+    });
+  }
+
   findMyCourses(userId: string) {
     return this.prisma.course.findMany({
       where: { teacherId: userId },

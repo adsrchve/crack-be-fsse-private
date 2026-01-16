@@ -79,16 +79,20 @@ async function main() {
     }
 
 
-// ======= SEED COURSES =======
-    const course = await prisma.course.findFirst();
-    if (course) {
-        const lessonCount = await prisma.lesson.count();
+// ======= SEED LESSONS =======
+    const courses = await prisma.course.findMany();
+
+    for (const course of courses) {
+        const lessonCount = await prisma.lesson.count({
+            where: { courseId: course.id}
+        });
+
         if (lessonCount === 0) {
             await prisma.lesson.createMany({
                 data: [
                     { 
                         title: "Intro to Programming",
-                        content: "Welcome...",
+                        content: "Welcome to Programming Lesson.",
                         courseId: course.id,
                         order: 1,
                     },
@@ -100,12 +104,10 @@ async function main() {
                     },
                 ],
             });
-            console.log("Lessons seeded");
-        } else {
-            console.log('Lessons already exist');
-        }   
-
+        }
     }
+
+    console.log("Lessons seeded for all courses");
 }
 
 

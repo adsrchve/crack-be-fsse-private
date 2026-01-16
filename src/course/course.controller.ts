@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Req, UseGuards } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
@@ -17,6 +17,11 @@ export class CourseController {
   @Get()
   findAllCourses() {
     return this.courseService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.courseService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard)

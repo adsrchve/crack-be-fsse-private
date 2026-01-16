@@ -5,25 +5,33 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class LessonService {
-  constructor (private prisma: PrismaService) {}
+    constructor (private prisma: PrismaService) {}
 
-  async create(courseId: string, dto, userId: string, role: string) {
-    const course = await this.prisma.course.findUnique({
-      where: { id: courseId },
-    });
+    async create(courseId: string, dto, userId: string, role: string) {
+        const course = await this.prisma.course.findUnique({
+          where: { id: courseId },
+        });
 
-    if (!course || course.teacherId !== userId) 
-      throw new ForbiddenException("You are not the owner of this course");
+        if (!course || course.teacherId !== userId) 
+          throw new ForbiddenException("You are not the owner of this course");
 
-    return this.prisma.lesson.create({
-      data: { ...dto, courseId },
-    });
-  }
+        return this.prisma.lesson.create({
+          data: { ...dto, courseId },
+        });
+    }
 
-  async findByCourse(courseId: string) {
-    return this.prisma.lesson.findMany({
-      where: { courseId },
-      orderBy: { order: 'asc' },
-    });
-  }
+    async findByCourse(courseId: string) {
+        return this.prisma.lesson.findMany({
+          where: { courseId },
+          orderBy: { order: 'asc' },
+        });
+    }
+
+    async completedLesson(userId: string, lessonId: string) {
+      return this.prisma.lessonProgress.upsert({
+        where: { userId_lessonId: { userId, lessonId }},
+        update: { completed: true },
+        create: { userId, lessonId },
+      });
+    }
 }

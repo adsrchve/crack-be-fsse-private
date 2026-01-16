@@ -17,4 +17,10 @@ export class LessonController {
   findByCourse(@Param('courseId') courseId: string) {
     return this.lessonService.findByCourse(courseId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':lessonId/complete')
+  completedLesson(@Req() req, @Param('lessonId') lessonId: string) {
+    return this.lessonService.completedLesson(req.user.userId, lessonId);
+  }
 }
