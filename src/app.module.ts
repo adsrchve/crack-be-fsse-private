@@ -12,11 +12,12 @@ import { AssignmentModule } from './assignment/assignment.module';
 import { QuizModule } from './quiz/quiz.module';
 import { ProfileModule } from './profile/profile.module';
 import { DiscussionModule } from './discussion/discussion.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    AuthModule, PrismaModule, AdminModule, CourseModule, EnrollmentModule, LessonModule, AssignmentModule, QuizModule, ProfileModule, DiscussionModule],
+    AuthModule, PrismaModule, AdminModule, CourseModule, EnrollmentModule, LessonModule, AssignmentModule, QuizModule, ProfileModule, DiscussionModule, UsersModule],
   controllers: [AppController],
   providers: [AppService],
 })
