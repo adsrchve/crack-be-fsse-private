@@ -2,36 +2,74 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { CourseStatus } from '@prisma/client';
 
 @Injectable()
 export class CourseService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateCourseDto, userId: string, role: string) {
-    if (role !== 'ADMIN' && role !== 'TEACHER')
-      throw new ForbiddenException('Only teacher can add course');
+  // ===================
+  // TEACHER
+  // ===================
 
+  createCourse(dto: CreateCourseDto, teacherId: string) {
     return this.prisma.course.create({
-      data: { ...dto, teacherId: userId },
+      data: { ...dto, teacherId, status: CourseStatus.DRAFT },
     });
   }
 
-  findAll() {
+  async publishCourse(courseId: string, teacherId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+
+    if (!course) throw new ForbiddenException('Course not found');
+    if (course.teacherId !== teacherId) throw new ForbiddenException('Not your course');
+
+    return this.prisma.course.update({
+      where: { id: courseId },
+      data: { status: CourseStatus.PUBLISHED },
+    });
+  }
+
+  async unpublishCourse(courseId: string, teacherId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+    });
+
+    if (!course) throw new ForbiddenException('Course not found');
+    if (course.teacherId !== teacherId) throw new ForbiddenException('Not your course');
+
+    return this.prisma.course.update({
+      where: { id: courseId },
+      data: { status: CourseStatus.DRAFT },
+    });
+  }
+
+  findMyCourses(teacherId: string) {
     return this.prisma.course.findMany({
+      where: { teacherId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+
+  // ===================
+  // STUDENT
+  // ===================
+
+  findAllCourses() {
+    return this.prisma.course.findMany({
+      where: { status: CourseStatus.PUBLISHED },
       include: { teacher: true },
     });
   }
 
-  findOne(id: string) {
-    return this.prisma.course.findUnique({
-      where: { id },
+  findOneCourse(id: string) {
+    return this.prisma.course.findFirst({
+      where: { id, status: CourseStatus.PUBLISHED },
       include: { teacher: true },
     });
   }
 
-  findMyCourses(userId: string) {
-    return this.prisma.course.findMany({
-      where: { teacherId: userId },
-    });
-  }
 }

@@ -2,31 +2,26 @@ import { Controller, Get, Post, Param, Body, Req, UseGuards } from '@nestjs/comm
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { JwtAuthGuard } from 'src/auth/guard/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/roles/roles.guard';
+import { Roles } from 'src/auth/roles/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('courses')
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}
 
-  @UseGuards(JwtAuthGuard)
-  @Post()
-  create(@Body() dto: CreateCourseDto, @Req() req) {
-    console.log('USER:', req.user);
-    return this.courseService.create(dto, req.user.userId, req.user.role);
-  }
+  // ===================
+  // STUDENT
+  // ===================
 
   @Get()
   findAllCourses() {
-    return this.courseService.findAll();
+    return this.courseService.findAllCourses();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.courseService.findOne(id);
+  findOneCourse(@Param('id') id: string) {
+    return this.courseService.findOneCourse(id);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get('/me')
-  muyCourses(@Req() req) {
-    return this.courseService.findMyCourses(req.user.userId);
-  }
 }

@@ -98,19 +98,25 @@ export class AuthService {
 
 
 // LOGIN
-    async login(dto: LoginDto) {
+    async validateUser(dto:LoginDto) {
         const user = await this.prisma.user.findUnique({
             where: { email: dto.email },
         });
 
         if (!user) throw new UnauthorizedException('Invalid credentials');
-        if (user.status !== UserStatus.ACTIVE) {
-            throw new ForbiddenException('Account not approved yet');
-        }
-        
-        const isMatch = await bcrypt.compare(dto.password, user.password);
 
-        if (!isMatch) throw new UnauthorizedException('Invalid credentials');
+        const isPasswordValid = await bcrypt.compare(
+            dto.password,
+            user.password,
+        );
+
+        if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials');
+    
+        return user;
+    };
+
+    async login(dto: LoginDto) {
+        const user = await this.validateUser(dto);
 
         const payload = {
             id: user.id,
@@ -119,17 +125,11 @@ export class AuthService {
             role: user.role,
         };
 
-        const accessToken = await this.jwtService.signAsync(payload);
+        const accessToken = this.jwtService.sign(payload);
 
         return {
-            message: 'Login success',
-            accessToken: accessToken,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-            },
+            accessToken,
+            user,
         };
     };
 }

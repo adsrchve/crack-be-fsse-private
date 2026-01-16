@@ -1,9 +1,9 @@
 import { AuthService } from './auth.service';
-import { Controller, Get, UseGuards, Req, NotFoundException, Query } from '@nestjs/common';
+import { Controller, Get, UseGuards, Req, NotFoundException, Query, Res } from '@nestjs/common';
 import { Body, Post } from '@nestjs/common';
 import { RegisterStudentDto, LoginDto, RegisterTeacherDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guard/jwt-auth.guard';
-import { get } from 'http';
+import type { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -25,15 +25,28 @@ export class AuthController {
         return this.authService.approveTeacher(token);
     }
 
-    // User login
+    // ======= USER LOGIN =======
     @Post('login')
-    login(@Body() dto: LoginDto) {
-        return this.authService.login(dto);
+    async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+        const result = await this.authService.login(dto);
+
+        res.cookie('accessToken', result.accessToken, {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: false, 
+            path: '/',
+        });
+        
+        return {
+            message: 'Login success', 
+            user: result.user,
+        };
     }
 
     @UseGuards(JwtAuthGuard)
     @Get('me')
-    getProfile(@Req() req) {
+    me(@Req() req) {
         return req.user;
     }
+
 }
